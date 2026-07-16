@@ -13,6 +13,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: deploy
           key: ${{ secrets.SERVER_KEY }}
+          port: 2218
           script: |
             cd /opt/1panel/www/sites/redesign.vn.vigo.co.kr/index
             git pull origin main
