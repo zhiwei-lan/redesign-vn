@@ -18,9 +18,13 @@ jobs:
         id: files
         run: |
           files=$(git diff --name-only HEAD~1 HEAD | paste -sd ', ' -)
-          echo "changed_files=$files" >> "$GITHUB_OUTPUT"
-          echo "commit_msg=${{ github.event.head_commit.message }}" >> "$GITHUB_OUTPUT"
-          echo "author=${{ github.event.head_commit.author.name }}" >> "$GITHUB_OUTPUT"
+          {
+            echo "changed_files=$files"
+            echo "commit_msg<<EOF"
+            echo "${{ github.event.head_commit.message }}"
+            echo "EOF"
+            echo "author=${{ github.event.head_commit.author.name }}"
+          } >> "$GITHUB_OUTPUT"
 
       - uses: appleboy/ssh-action@v1.0.3
         id: deploy
@@ -34,35 +38,36 @@ jobs:
             cd /opt/1panel/www/sites/redesign.vn.vigo.co.kr/index
             git pull origin main
             echo "✅ 部署完成时间: $(date)"
-            - name: Notify failure - Email
-            if: failure()
-              uses: dawidd6/action-send-mail@v3
-              with:
-              server_address: smtp.126.com
-              server_port: 465
-              secure: true
-              username: ${{ secrets.EMAIL_USER }}
-              password: ${{ secrets.EMAIL_PASS }}
-              subject: '【紧急】redesign.vn.vigo.co.kr 自动部署失败 - 请手动拉取'
-              to: ${{ secrets.EMAIL_USER }}
-              from: GitHub Actions <${{ secrets.EMAIL_USER }}>
-              html_body: |
-                <h2 style="color: #e74c3c;">⚠️ redesign.vn.vigo.co.kr 自动部署失败</h2>
-                <hr>
-                <p><b>仓库:</b> ${{ github.repository }}</p>
-                <p><b>分支:</b> ${{ github.ref_name }}</p>
-                <p><b>提交信息:</b> ${{ steps.files.outputs.commit_msg }}</p>
-                <p><b>提交者:</b> ${{ steps.files.outputs.author }}</p>
-                <p><b>时间:</b> ${{ github.event.head_commit.timestamp }}</p>
-                <hr>
-                <h3>📁 本次更新的文件:</h3>
-                <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">
-                ${{ steps.files.outputs.changed_files }}
-                </pre>
-                <hr>
-                <h3>🔧 请手动执行:</h3>
-                <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">
-                cd /opt/1panel/www/sites/redesign.vn.vigo.co.kr/index && git pull origin main
-                </pre>
-                <hr>
-                <p><a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" style="color: #3498db;">查看详细日志 →</a></p>
+
+      - name: Notify failure - Email
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.126.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.EMAIL_USER }}
+          password: ${{ secrets.EMAIL_PASS }}
+          subject: '【紧急】redesign.vn.vigo.co.kr 自动部署失败 - 请手动拉取'
+          to: ${{ secrets.EMAIL_USER }}
+          from: GitHub Actions <${{ secrets.EMAIL_USER }}>
+          html_body: |
+            <h2 style="color: #e74c3c;">⚠️ redesign.vn.vigo.co.kr 自动部署失败</h2>
+            <hr>
+            <p><b>仓库:</b> ${{ github.repository }}</p>
+            <p><b>分支:</b> ${{ github.ref_name }}</p>
+            <p><b>提交信息:</b> ${{ steps.files.outputs.commit_msg }}</p>
+            <p><b>提交者:</b> ${{ steps.files.outputs.author }}</p>
+            <p><b>时间:</b> ${{ github.event.head_commit.timestamp }}</p>
+            <hr>
+            <h3>📁 本次更新的文件:</h3>
+            <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">
+              ${{ steps.files.outputs.changed_files }}
+                          </pre>
+                          <hr>
+                          <h3>🔧 请手动执行:</h3>
+                          <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">
+              cd /opt/1panel/www/sites/redesign.vn.vigo.co.kr/index && git pull origin main
+                          </pre>
+                          <hr>
+                          <p><a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" style="color: #3498db;">查看详细日志 →</a></p>
