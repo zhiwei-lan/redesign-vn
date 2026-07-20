@@ -7,13 +7,62 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # 关键：设置超时时间为 5 分钟，超时会自动失败并触发邮件通知
+    timeout-minutes: 1
+
     steps:
       - uses: appleboy/ssh-action@v1.0.3
+        id: deploy
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: deploy
           key: ${{ secrets.SERVER_KEY }}
-          port: 2218
+          port: 2208
+          # 设置 SSH 连接超时 30 秒，避免无限等待
+          timeout: 30s
           script: |
             cd /opt/1panel/www/sites/redesign.vn.vigo.co.kr/index
+            echo "=== 本次更新的文件 ===" > /tmp/deploy_files.txt
+            git log -1 --name-only --pretty=format: >> /tmp/deploy_files.txt
+            echo "" >> /tmp/deploy_files.txt
+            echo "=== 提交信息 ===" >> /tmp/deploy_files.txt
+            git log -1 --pretty=format:"%h - %s (%an, %ad)" >> /tmp/deploy_files.txt
+            cat /tmp/deploy_files.txt
             git pull origin main
+            echo "✅ 部署完成时间: $(date)"
+
+      # 部署失败时发送邮件通知（含文件列表和手动拉取命令）
+      - name: Notify failure - Email
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.126.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.EMAIL_USER }}
+          password: ${{ secrets.EMAIL_PASS }}
+          subject: '【紧急】redesign.vn.vigo.co.kr 自动部署失败 - 请手动拉取'
+          to: ${{ secrets.EMAIL_USER }}  # 自己给自己发邮件
+          from: GitHub Actions <${{ secrets.EMAIL_USER }}>
+          html_body: |
+            <h2 style="color: #e74c3c;">⚠️ redesign.vn.vigo.co.kr 自动部署失败</h2>
+            <hr>
+            <p><b>仓库:</b> ${{ github.repository }}</p>
+            <p><b>分支:</b> ${{ github.ref_name }}</p>
+            <p><b>提交信息:</b> ${{ github.event.head_commit.message }}</p>
+            <p><b>提交者:</b> ${{ github.event.head_commit.author.name }}</p>
+            <p><b>时间:</b> ${{ github.event.head_commit.timestamp }}</p>
+            <hr>
+            <h3>📁 本次更新的文件:</h3>
+            <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px; max-height: 300px; overflow: auto;">
+${{ github.event.head_commit.modified }}
+${{ github.event.head_commit.added }}
+${{ github.event.head_commit.removed }}
+            </pre>
+            <hr>
+            <h3>🔧 请手动执行以下命令:</h3>
+            <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">
+cd /opt/1panel/www/sites/redesign.vn.vigo.co.kr/index && git pull origin main
+            </pre>
+            <hr>
+            <p><a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" style="color: #3498db;">查看详细日志 →</a></p>
