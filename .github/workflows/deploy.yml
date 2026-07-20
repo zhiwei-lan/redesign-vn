@@ -32,7 +32,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: deploy
           key: ${{ secrets.SERVER_KEY }}
-          port: 2208
+          port: 2218
           timeout: 30s
           script: |
             cd /opt/1panel/www/sites/redesign.vn.vigo.co.kr/index
@@ -43,13 +43,13 @@ jobs:
         if: failure()
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.126.com
-          server_port: 465
-          secure: true
+          server_address: smtp.office365.com
+          server_port: 587
+          secure: false
           username: ${{ secrets.EMAIL_USER }}
           password: ${{ secrets.EMAIL_PASS }}
           subject: '【紧急】redesign.vn.vigo.co.kr 自动部署失败 - 请手动拉取'
-          to: ${{ secrets.EMAIL_USER }}
+          to: ${{ secrets.EMAIL_USER }}, ${{ secrets.NOTIFY_EMAIL_SECOND }}
           from: GitHub Actions <${{ secrets.EMAIL_USER }}>
           html_body: |
             <h2 style="color: #e74c3c;">⚠️ redesign.vn.vigo.co.kr 自动部署失败</h2>
@@ -62,12 +62,12 @@ jobs:
             <hr>
             <h3>📁 本次更新的文件:</h3>
             <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">
-              ${{ steps.files.outputs.changed_files }}
-                          </pre>
-                          <hr>
-                          <h3>🔧 请手动执行:</h3>
-                          <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">
-              cd /opt/1panel/www/sites/redesign.vn.vigo.co.kr/index && git pull origin main
-                          </pre>
-                          <hr>
-                          <p><a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" style="color: #3498db;">查看详细日志 →</a></p>
+            ${{ steps.files.outputs.changed_files }}
+                        </pre>
+                        <hr>
+                        <h3>🔧 请手动执行:</h3>
+                        <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;">
+            cd /opt/1panel/www/sites/redesign.vn.vigo.co.kr/index && git pull origin main
+                        </pre>
+                        <hr>
+                        <p><a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" style="color: #3498db;">查看详细日志 →</a></p>
